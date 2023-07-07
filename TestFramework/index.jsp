@@ -26,5 +26,13 @@
         <input type="file" name="fu">
         <input type="submit" value="Valider">
     </form>
+    <h2>Login</h2>
+    <form action="login.do" method="POST" enctype="multipart/form-data">
+        <select name="profil">
+            <option value="admin">Admin</option>
+            <option value="simple">Simple</option>
+        </select>
+        <input type="submit" value="Valider">
+    </form>
 </body>
 </html>
