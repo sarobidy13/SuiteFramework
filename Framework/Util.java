@@ -46,5 +46,11 @@ public class Util {
         }
         return list;
     }
+    public String casse(String input) {
+        char[] strrep = input.toCharArray();
+        strrep[0] = Character.toUpperCase(strrep[0]);
+
+        return new String(strrep);
+    }
 
 }
