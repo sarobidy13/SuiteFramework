@@ -1,6 +1,7 @@
 package etu1816.framework.servlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -18,15 +19,13 @@ import util.Util;
 import etu1816.framework.annotation.*;
 import etu1816.framework.ModelView;
 
-
-
 public class FrontServlet extends HttpServlet {
 
     HashMap<String, Object> singleton;
     Util util;
     String sessionVariable;
     HashMap<String, Mapping> mappingUrls;
- 
+
     @Override
     public void init() throws ServletException {
         super.init();
@@ -100,14 +99,13 @@ public class FrontServlet extends HttpServlet {
                 }
             }
             ModelView mv = util.invokeMethod(request, map, singleton, sessionVariable);
-            HashMap<String, Object> donne = mv.getData();
-            for(String key : donne.keySet()) {
-                System.out.println(key);
-                request.setAttribute(key, donne.get(key));
+            if (!mv.isJson()) {
+                util.setAttributeRequest(request, mv);
+                request.getRequestDispatcher(mv.getView()).forward(request, response);
+            } else {
+                PrintWriter out = response.getWriter();
+                out.print(mv.toJson());
             }
-            
-            util.setAttributeRequest(request, mv);
-            request.getRequestDispatcher(mv.getView()).forward(request, response);
 
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
                 | InvocationTargetException ignored) {

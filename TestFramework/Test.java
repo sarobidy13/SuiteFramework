@@ -30,7 +30,8 @@ public class Test {
 
         return mv;
     }
-    @MethodAnnotation( url = "login.do", paramName="profil")
+
+    @MethodAnnotation(url = "login.do", paramName = "profil")
     public ModelView test(String profil) {
         ModelView mv = new ModelView();
 
@@ -40,8 +41,8 @@ public class Test {
         return mv;
     }
 
-    @Authentification( profil = "admin")
-    @MethodAnnotation( url = "save.do")
+    @Authentification(profil = "admin")
+    @MethodAnnotation(url = "save.do")
     public ModelView save() {
         ModelView mv = new ModelView();
 
@@ -50,13 +51,14 @@ public class Test {
 
         return mv;
     }
-    @Authentification( profil = "admin,simple")
-    @MethodAnnotation( url = "setNewTest.do", paramName = "identifiant,name")
+
+    @Authentification(profil = "admin,simple")
+    @MethodAnnotation(url = "setNewTest.do", paramName = "identifiant,name")
     public ModelView newTest(int identifiant, String name) {
         ModelView mv = new ModelView();
 
         this.setId(identifiant);
-        this.setNom(name); 
+        this.setNom(name);
 
         mv.setView("/test.jsp");
         mv.addItem("obj", this);
