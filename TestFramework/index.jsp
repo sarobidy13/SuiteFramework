@@ -7,8 +7,18 @@
     <title>Test framework fromulaire</title>
 </head>
 <body>
+   <h2>formulaire</h2>
     <form action="save.do" method="POST">
+        <input type="number" name="id" placeholder="id">
         <input type="text" name="nom" placeholder="Entrer le nom">
+        <input type="submit" value="Valider">
+    </form>
+    <hr>
+
+    <h2>formulaire</h2>
+    <form action="setNewTest.do" method="POST">
+        <input type="number" name="identifiant" placeholder="id">
+        <input type="text" name="name" placeholder="Entrer le nom">
         <input type="submit" value="Valider">
     </form>
 </body>

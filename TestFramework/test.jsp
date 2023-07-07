@@ -7,6 +7,8 @@
     <title>Test JSP</title>
 </head>
 <body>
-    <% out.print(request.getAttribute("test")); %>    
+    <% Test t = (Test) request.getAttribute("obj");  %>
+    id= <%= t.getId()  %><br>    
+    nom= <%= t.getNom()  %>      
 </body>
 </html>

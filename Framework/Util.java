@@ -1,8 +1,20 @@
 package util;
+import etu1816.framework.Mapping;
+import etu1816.framework.MethodAnnotation;
+import etu1816.framework.ModelView;
+import jakarta.servlet.http.HttpServletRequest;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
+
 
 public class Util {
 
@@ -52,5 +64,114 @@ public class Util {
 
         return new String(strrep);
     }
+    
+    public ModelView invokeMethod(HttpServletRequest request, Mapping mapping) throws Exception {
+        ArrayList<Class<?>> type = new ArrayList<>();
+        ArrayList<Object> value = new ArrayList<>();
+        this.setArgValue(request, mapping, type, value);
+
+        Object o = this.setObjectByRequest(request, mapping);
+
+        return (ModelView) o.getClass().getMethod(mapping.getMethod(), type.toArray(Class[]::new)).invoke(o, value.toArray(Object[]::new));
+    }
+
+    public Object castPrimaryType(String data, Class<?> type) throws ParseException {
+        if(data == null || type == null) return null;
+
+        if (type.equals(Date.class)) {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            return type.cast(format.parse(data));
+        }else if(type.equals(int.class)) return Integer.parseInt(data);
+        else if(type.equals(float.class)) return Float.parseFloat(data);
+        else if(type.equals(double.class)) return Double.parseDouble(data);
+        else if(type.equals(boolean.class)) return Boolean.getBoolean(data);
+
+        return data;
+    }
+    public void setArgValue(HttpServletRequest request, Mapping mapping, ArrayList<Class<?>> type, ArrayList<Object> value) throws Exception {
+        Method m = this.getMethodByClassName(mapping.getClassName(), mapping.getMethod());
+
+        if(m.isAnnotationPresent(MethodAnnotation.class) && !m.getAnnotation(MethodAnnotation.class).paramName().equals("") ) {
+            type.addAll(List.of(m.getParameterTypes()));
+
+            String[] paramName = m.getAnnotation(MethodAnnotation.class).paramName().split(",");
+
+            if(paramName.length != type.size()) throw new Exception("Number of argument exception \n" +
+                    "\t" + paramName.length + " declared but " + type.size() + " expected");
+
+            String value_temp;
+            for (int i=0; i< paramName.length; i++) {
+                value_temp = request.getParameter(paramName[i].trim());
+                value.add(this.castPrimaryType(value_temp, type.get(i)));
+            }
+        }
+    }
+
+    public Method getMethodByClassName(String className, String method) throws NoSuchMethodException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Class<?> clazz = Class.forName(className);
+        Object o = clazz.getDeclaredConstructor().newInstance();
+
+        Method result = null;
+        Method[] allMethod = o.getClass().getDeclaredMethods();
+        for (Method m : allMethod) {
+            if(m.getName() .equals(method)) {
+                result = m;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public void setAttributeRequest(HttpServletRequest request, ModelView mv) {
+        HashMap<String, Object> donne = mv.getData();
+        for(String key : donne.keySet()) {
+            request.setAttribute(key, donne.get(key));
+        }
+    }
+
+    public Object setObjectByRequest(HttpServletRequest request, Mapping map) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+        Class<?> clazz = Class.forName(map.getClassName());
+        Object o = clazz.getDeclaredConstructor().newInstance();
+
+        Field[] allField = o.getClass().getDeclaredFields();
+        String field_name;
+        String value;
+
+        for(Field f : allField) {
+            field_name = f.getName();
+            value = request.getParameter(field_name);
+
+            if(value != null) {
+                try {
+                    o.getClass()
+                            .getMethod("set"+this.casse(field_name), f.getType())
+                            .invoke(o, this.castPrimaryType(value, f.getType()));
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return o;
+    }
+
+    public void loadMapping(String path, String tomPath, HashMap<String, Mapping> mappingUrls) throws ClassNotFoundException {
+        List<Class<?>> allClass = this.getAllClass(path, tomPath);
+        Mapping mapping;
+        Method[] allMethods;
+        for(Class<?> c : allClass) {
+            allMethods = c.getMethods();
+
+            for(Method m : allMethods) {
+                if(m.isAnnotationPresent(MethodAnnotation.class)) {
+                    mapping = new Mapping();
+                    mapping.setClassName(c.getName());
+                    mapping.setMethod(m.getName());
+                    mappingUrls.put(m.getAnnotation(MethodAnnotation.class).url(), mapping);
+                }
+            }
+        }
+    }
+
 
 }
