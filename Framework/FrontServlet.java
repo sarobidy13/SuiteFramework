@@ -15,14 +15,16 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import etu1816.framework.Mapping;
 import util.Util;
-import etu1816.framework.MethodAnnotation;
+import etu1816.framework.annotation.*;
 import etu1816.framework.ModelView;
 
 
 
 public class FrontServlet extends HttpServlet {
 
+    HashMap<String, Object> singleton;
     Util util;
+    String sessionVariable;
     HashMap<String, Mapping> mappingUrls;
 
     @Override
@@ -32,11 +34,12 @@ public class FrontServlet extends HttpServlet {
 
             this.util = new Util();
             this.mappingUrls = new HashMap<>();
-
-            final String tomPath = "/WEB-INF/classes/";
+            this.singleton = new HashMap<>();
+            String tomPath = "/WEB-INF/classes/";
             String path = getServletContext().getRealPath(tomPath);
             List<Class<?>> allClass = util.FindAllClass(path, tomPath);
 
+            util.loadMapping(path, tomPath, mappingUrls, singleton);
             Mapping mapping;
             Method[] allMethods;
             for (Class<?> c : allClass) {

@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface MethodAnnotation {
-    String url();
-    String paramName() default "";
+public @interface Authentification {
+    String profil();
 }

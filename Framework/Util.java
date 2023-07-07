@@ -1,9 +1,13 @@
 package util;
-import etu1816.framework.Mapping;
-import etu1816.framework.MethodAnnotation;
-import etu1816.framework.ModelView;
-import jakarta.servlet.http.HttpServletRequest;
 
+import etu1816.framework.Scope;
+import etu1816.framework.ScopeType;
+import etu1816.framework.Mapping;
+import etu1816.framework.annotation.*;
+import etu1816.framework.ModelView;
+import etu1816.framework.FileUpload;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.ServletException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -12,9 +16,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.io.IOException;
 import java.io.File;
 import java.util.ArrayList;
-
+import jakarta.servlet.http.Part;
 
 public class Util {
 
@@ -23,6 +28,13 @@ public class Util {
         String method = methode[methode.length - 1];
         return method;
 
+    }
+    public void initObject(Object o) throws IllegalAccessException, ParseException {
+        for (Field field : o.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            field.set(o, castPrimaryType("", field.getType()));
+            field.setAccessible(false);
+        }
     }
 
     public ArrayList<Class<?>> FindAllClass(String path, String path2) throws Exception {
@@ -77,7 +89,10 @@ public class Util {
 
     public Object castPrimaryType(String data, Class<?> type) throws ParseException {
         if(data == null || type == null) return null;
-
+        if(data.equals("")) {
+            if(type.equals(Date.class) || type.equals(String.class)) return null;
+            else return 0;
+        }
         if (type.equals(Date.class)) {
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
             return type.cast(format.parse(data));
@@ -105,6 +120,14 @@ public class Util {
                 value.add(this.castPrimaryType(value_temp, type.get(i)));
             }
         }
+    }
+    public FileUpload getValueUploadedFile(HttpServletRequest request, String field_name) throws ServletException, IOException {
+        Part filePart = request.getPart(field_name);
+        FileUpload result = new FileUpload();
+        result.setName(filePart.getSubmittedFileName());
+        result.setFile(filePart.getInputStream().readAllBytes());
+
+        return result;
     }
 
     public Method getMethodByClassName(String className, String method) throws NoSuchMethodException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
@@ -154,13 +177,28 @@ public class Util {
         }
         return o;
     }
+    public boolean isIn(String[] data, String find) {
+        for (String s : data) {
+            if(s.trim().equals(find)) return true;
+        }
+        return false;
+    }
 
-    public void loadMapping(String path, String tomPath, HashMap<String, Mapping> mappingUrls) throws ClassNotFoundException,Exception {
+    public void loadMapping(String path, String tomPath, HashMap<String, Mapping> mappingUrls, HashMap<String, Object> singleton) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException,Exception {
         List<Class<?>> allClass = this.FindAllClass(path, tomPath);
         Mapping mapping;
         Method[] allMethods;
+
         for(Class<?> c : allClass) {
             allMethods = c.getMethods();
+
+            if (c.isAnnotationPresent(Scope.class)) {
+                if (c.getAnnotation(Scope.class).type().equals(ScopeType.SINGLETON)){
+                    Class<?> clazz = Class.forName(c.getName());
+                    Object temp = clazz.getDeclaredConstructor().newInstance();
+                    singleton.put(c.getName(), temp);
+                }
+            }
 
             for(Method m : allMethods) {
                 if(m.isAnnotationPresent(MethodAnnotation.class)) {
@@ -172,6 +210,7 @@ public class Util {
             }
         }
     }
+
 
 
 }
