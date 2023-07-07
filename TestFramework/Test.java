@@ -36,7 +36,7 @@ public class Test {
         ModelView mv = new ModelView();
 
         this.setId(0);
-        this.setNom("Elyse");
+        this.setNom("Sarobidy");
 
         mv.setView("/test.jsp");
         mv.addItem("obj", this);
