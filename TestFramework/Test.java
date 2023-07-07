@@ -66,6 +66,18 @@ public class Test {
         return mv;
     }
 
+    @restAPI
+    @MethodAnnotation(url = "rest.do")
+    public HashMap restAPI() {
+        HashMap<String, Object> test = new HashMap<>();
+
+        test.put("pers1", 123);
+        test.put("pers2", 123);
+        test.put("pers3", 123);
+
+        return test;
+    }
+
     @MethodAnnotation(url = "upload.do", paramName = "fu")
     public ModelView upload(FileUpload fu) {
         ModelView mv = new ModelView();

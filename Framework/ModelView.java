@@ -9,6 +9,7 @@ public class ModelView {
     HashMap<String, String> session;
     boolean json;
     Gson gson;
+    boolean api;
 
     public void addItem(String key, Object value) {
         this.data.put(key, value);
@@ -52,7 +53,15 @@ public class ModelView {
     public void setJson(boolean json) {
         this.json = json;
     }
+
+    public boolean isApi() {
+        return api;
+    }
+
+    public void setApi(boolean api) {
+        this.api = api;
+    }
     public String toJson() {
-        return gson.toJson(data);
+        return !isApi() ? gson.toJson(data) : gson.toJson(data.get("objectDataResultFramework"));
     }
 }
