@@ -21,5 +21,10 @@
         <input type="text" name="name" placeholder="Entrer le nom">
         <input type="submit" value="Valider">
     </form>
+    <h2>fromulaire upload </h2>
+    <form action="upload.do" method="POST" enctype="multipart/form-data">
+        <input type="file" name="fu">
+        <input type="submit" value="Valider">
+    </form>
 </body>
 </html>

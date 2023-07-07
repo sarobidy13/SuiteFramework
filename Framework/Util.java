@@ -155,8 +155,8 @@ public class Util {
         return o;
     }
 
-    public void loadMapping(String path, String tomPath, HashMap<String, Mapping> mappingUrls) throws ClassNotFoundException {
-        List<Class<?>> allClass = this.getAllClass(path, tomPath);
+    public void loadMapping(String path, String tomPath, HashMap<String, Mapping> mappingUrls) throws ClassNotFoundException,Exception {
+        List<Class<?>> allClass = this.FindAllClass(path, tomPath);
         Mapping mapping;
         Method[] allMethods;
         for(Class<?> c : allClass) {
