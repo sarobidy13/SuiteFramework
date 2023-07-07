@@ -1,19 +1,22 @@
 package etu1816.framework.servlet;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
-import util.Util;
-import etu1816.framework.Mapping;
-import etu1816.framework.MethodAnnotation;
-import etu1816.framework.ModelView;
+import java.lang.reflect.InvocationTargetException;
+
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import etu1816.framework.Mapping;
+import util.Util;
+import etu1816.framework.MethodAnnotation;
+import etu1816.framework.ModelView;
 
 
 
@@ -80,6 +83,18 @@ public class FrontServlet extends HttpServlet {
 
             Class<?> clazz = Class.forName(map.getClassName());
             Object o = clazz.getDeclaredConstructor().newInstance();
+            Field[] allField = o.getClass().getDeclaredFields();
+            String field_name;
+            String value;
+            for (Field f : allField) {
+
+                field_name = f.getName();
+                value = request.getParameter(field_name);
+
+                if (value != null) {
+                    o.getClass().getMethod("set" + util.casse(field_name), String.class).invoke(o, value);
+                }
+            }
             ModelView mv = (ModelView) o.getClass().getMethod(map.getMethod()).invoke(o);
 
             HashMap<String, Object> donne = mv.getData();
