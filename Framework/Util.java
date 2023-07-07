@@ -6,6 +6,7 @@ import etu1816.framework.Mapping;
 import etu1816.framework.annotation.*;
 import etu1816.framework.ModelView;
 import etu1816.framework.FileUpload;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.ServletException;
 import java.lang.reflect.Field;
@@ -29,14 +30,6 @@ public class Util {
         return method;
 
     }
-    public void initObject(Object o) throws IllegalAccessException, ParseException {
-        for (Field field : o.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-            field.set(o, castPrimaryType("", field.getType()));
-            field.setAccessible(false);
-        }
-    }
-
     public ArrayList<Class<?>> FindAllClass(String path, String path2) throws Exception {
         ArrayList<Class<?>> list = new ArrayList<>();
         File file = new File(path);
@@ -77,22 +70,13 @@ public class Util {
         return new String(strrep);
     }
     
-    public ModelView invokeMethod(HttpServletRequest request, Mapping mapping) throws Exception {
-        ArrayList<Class<?>> type = new ArrayList<>();
-        ArrayList<Object> value = new ArrayList<>();
-        this.setArgValue(request, mapping, type, value);
-
-        Object o = this.setObjectByRequest(request, mapping);
-
-        return (ModelView) o.getClass().getMethod(mapping.getMethod(), type.toArray(Class[]::new)).invoke(o, value.toArray(Object[]::new));
-    }
-
     public Object castPrimaryType(String data, Class<?> type) throws ParseException {
         if(data == null || type == null) return null;
         if(data.equals("")) {
             if(type.equals(Date.class) || type.equals(String.class)) return null;
             else return 0;
         }
+
         if (type.equals(Date.class)) {
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
             return type.cast(format.parse(data));
@@ -103,6 +87,24 @@ public class Util {
 
         return data;
     }
+    
+    public ModelView invokeMethod(HttpServletRequest request, Mapping mapping, HashMap<String, Object> singleton, String session) throws Exception {
+        ArrayList<Class<?>> type = new ArrayList<>();
+        ArrayList<Object> value = new ArrayList<>();
+        this.setArgValue(request, mapping, type, value);
+
+        Object o = this.setObjectByRequest(request, mapping, singleton);
+
+        Method m = o.getClass().getMethod(mapping.getMethod(), type.toArray(Class[]::new));
+        if(m.isAnnotationPresent(Authentification.class)){
+            String[] allPermission = m.getAnnotation(Authentification.class).profil().split(",");
+            String userPermission = String.valueOf(request.getSession().getAttribute(session));
+            if (isIn(allPermission, userPermission)) {
+                return (ModelView) m.invoke(o, value.toArray(Object[]::new));
+            }else throw new Exception("Permission denied");
+        }else return (ModelView) m.invoke(o, value.toArray(Object[]::new));
+    }
+
     public void setArgValue(HttpServletRequest request, Mapping mapping, ArrayList<Class<?>> type, ArrayList<Object> value) throws Exception {
         Method m = this.getMethodByClassName(mapping.getClassName(), mapping.getMethod());
 
@@ -121,7 +123,7 @@ public class Util {
             }
         }
     }
-    public FileUpload getValueUploadedFile(HttpServletRequest request, String field_name) throws ServletException, IOException {
+    private static FileUpload getValueUploadedFile(HttpServletRequest request, String field_name) throws ServletException, IOException {
         Part filePart = request.getPart(field_name);
         FileUpload result = new FileUpload();
         result.setName(filePart.getSubmittedFileName());
@@ -153,23 +155,30 @@ public class Util {
         }
     }
 
-    public Object setObjectByRequest(HttpServletRequest request, Mapping map) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
-        Class<?> clazz = Class.forName(map.getClassName());
-        Object o = clazz.getDeclaredConstructor().newInstance();
+    public Object setObjectByRequest(HttpServletRequest request, Mapping map, HashMap<String, Object> singleton) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, ServletException, IOException, ParseException {
+        Object o = singleton.get(map.getClassName());
+        if(o == null) {
+            Class<?> clazz = Class.forName(map.getClassName());
+            o = clazz.getDeclaredConstructor().newInstance();
+        }
+        this.initObject(o);
 
         Field[] allField = o.getClass().getDeclaredFields();
         String field_name;
-        String value;
+        Object value_temp;
+        Object value;
 
         for(Field f : allField) {
             field_name = f.getName();
-            value = request.getParameter(field_name);
+            value_temp = (f.getType().equals(FileUpload.class)) ? Util.getValueUploadedFile(request, field_name) : request.getParameter(field_name);
 
-            if(value != null) {
+            if(value_temp != null) {
                 try {
+                    if(!f.getType().equals(FileUpload.class)) value = this.castPrimaryType(value_temp.toString(), f.getType());
+                    else value = value_temp;
                     o.getClass()
                             .getMethod("set"+this.casse(field_name), f.getType())
-                            .invoke(o, this.castPrimaryType(value, f.getType()));
+                            .invoke(o, value);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -208,6 +217,13 @@ public class Util {
                     mappingUrls.put(m.getAnnotation(MethodAnnotation.class).url(), mapping);
                 }
             }
+        }
+    }
+    public void initObject(Object o) throws IllegalAccessException, ParseException {
+        for (Field field : o.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            field.set(o, castPrimaryType("", field.getType()));
+            field.setAccessible(false);
         }
     }
 

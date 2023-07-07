@@ -26,7 +26,7 @@ public class FrontServlet extends HttpServlet {
     Util util;
     String sessionVariable;
     HashMap<String, Mapping> mappingUrls;
-
+ 
     @Override
     public void init() throws ServletException {
         super.init();
@@ -35,6 +35,7 @@ public class FrontServlet extends HttpServlet {
             this.util = new Util();
             this.mappingUrls = new HashMap<>();
             this.singleton = new HashMap<>();
+            this.sessionVariable = getInitParameter("session");
             String tomPath = "/WEB-INF/classes/";
             String path = getServletContext().getRealPath(tomPath);
             List<Class<?>> allClass = util.FindAllClass(path, tomPath);
@@ -98,15 +99,15 @@ public class FrontServlet extends HttpServlet {
                     o.getClass().getMethod("set" + util.casse(field_name), String.class).invoke(o, value);
                 }
             }
-            ModelView mv = (ModelView) o.getClass().getMethod(map.getMethod()).invoke(o);
-
+            ModelView mv = util.invokeMethod(request, map, singleton, sessionVariable);
             HashMap<String, Object> donne = mv.getData();
             for(String key : donne.keySet()) {
                 System.out.println(key);
                 request.setAttribute(key, donne.get(key));
             }
-            RequestDispatcher dispatcher = request.getRequestDispatcher(mv.getView());
-            dispatcher.forward(request, response);
+            
+            util.setAttributeRequest(request, mv);
+            request.getRequestDispatcher(mv.getView()).forward(request, response);
 
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
                 | InvocationTargetException ignored) {
